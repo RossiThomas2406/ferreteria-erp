@@ -16,6 +16,7 @@ function App() {
   const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [lastOrderId, setLastOrderId] = useState<number | null>(null);
 
   // Cargar productos al iniciar
   useEffect(() => {
@@ -24,7 +25,7 @@ function App() {
 
   const fetchProducts = () => {
     setLoading(true);
-    fetch('http://localhost:3000/api/products')
+    fetch('https://ferreteria-api-jq34.onrender.com/api/products')
       .then((res) => res.json())
       .then((data) => {
         setProducts(data);
@@ -82,16 +83,17 @@ function App() {
         }))
       };
 
-      const response = await fetch('http://localhost:3000/api/orders', {
+      const response = await fetch('https://ferreteria-api-jq34.onrender.com/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(saleData)
       });
 
       if (response.ok) {
-        alert("¡Venta Exitosa! 💰");
-        setCart([]); // Limpiar carrito
-        fetchProducts(); // Recargar productos para ver el nuevo stock
+        const json = await response.json(); // Leemos la respuesta
+        setLastOrderId(json.id);            // Guardamos el ID de la venta
+        setCart([]);                        // Vaciamos el carrito
+        fetchProducts();                    // Recargamos stock
       } else {
         const error = await response.json();
         alert("Error: " + error.error);
@@ -136,13 +138,36 @@ function App() {
                 </button>
               </div>
             ))}
-          </div>
+          </div>  
         </div>
 
         {/* COLUMNA DERECHA: TICKET (Ocupa 1 espacio) */}
         <div className="md:col-span-1">
           <div className="bg-white p-6 rounded-lg shadow-lg sticky top-4">
             <h2 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">🛒 Nueva Venta</h2>
+              {lastOrderId && (
+                <div className="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded relative">
+                  
+                  {/* Botón X para cerrar el aviso manualmente */}
+                  <button 
+                    onClick={() => setLastOrderId(null)}
+                    className="absolute top-2 right-2 text-green-800 hover:text-green-900 font-bold"
+                  >
+                    ✕
+                  </button>
+
+                  <p className="font-bold">¡Venta Exitosa! Orden #{lastOrderId}</p>
+                  
+                  <a 
+                    href={`https://ferreteria-api-jq34.onrender.com/api/orders/${lastOrderId}/pdf`}
+                    target="_blank"
+                    className="mt-2 block w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded text-center"
+                    // ELIMINAMOS EL ONCLICK DE AQUÍ para que no desaparezca al descargar
+                  >
+                    📄 DESCARGAR FACTURA
+                  </a>
+                </div>
+              )}
             
             {cart.length === 0 ? (
               <p className="text-gray-400 text-center py-8">El carrito está vacío</p>
