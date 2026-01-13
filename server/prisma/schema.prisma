@@ -1,0 +1,86 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --- ENUMS (Opciones fijas) ---
+enum Role {
+  ADMIN
+  VENDEDOR
+}
+
+enum OrderStatus {
+  PENDIENTE
+  COMPLETADO
+  CANCELADO
+}
+
+// --- TABLAS ---
+
+model User {
+  id        Int       @id @default(autoincrement())
+  email     String    @unique
+  password  String
+  name      String
+  role      Role      @default(VENDEDOR)
+  createdAt DateTime  @default(now())
+  deletedAt DateTime? // Soft Delete: Si tiene fecha, está desactivado
+
+  orders    Order[]
+}
+
+model Client {
+  id        Int       @id @default(autoincrement())
+  name      String
+  cuit      String    @unique
+  email     String?
+  address   String?
+  createdAt DateTime  @default(now())
+  deletedAt DateTime? // Soft Delete
+
+  orders    Order[]
+}
+
+model Product {
+  id          Int       @id @default(autoincrement())
+  name        String
+  description String?
+  price       Decimal   @db.Decimal(10, 2) // Ej: 99999999.99
+  stock       Int       // Stock físico actual
+  createdAt   DateTime  @default(now())
+  deletedAt   DateTime? // Soft Delete
+
+  orderItems  OrderItem[]
+}
+
+model Order {
+  id          Int         @id @default(autoincrement())
+  date        DateTime    @default(now())
+  total       Decimal     @db.Decimal(10, 2)
+  status      OrderStatus @default(COMPLETADO)
+  
+  // Relaciones
+  clientId    Int
+  client      Client      @relation(fields: [clientId], references: [id])
+  
+  userId      Int
+  user        User        @relation(fields: [userId], references: [id])
+  
+  items       OrderItem[]
+}
+
+model OrderItem {
+  id        Int     @id @default(autoincrement())
+  orderId   Int
+  order     Order   @relation(fields: [orderId], references: [id])
+  
+  productId Int
+  product   Product @relation(fields: [productId], references: [id])
+  
+  quantity  Int
+  price     Decimal @db.Decimal(10, 2) // Guardamos el precio al momento de la venta
+}

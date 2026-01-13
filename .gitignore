@@ -1,0 +1,15 @@
+# Dependencias gigantes que se bajan de internet
+node_modules/
+
+# Archivos de compilación
+dist/
+build/
+
+# Variables de entorno (CLAVES SECRETAS)
+.env
+.env.local
+
+# Logs y basura del sistema
+*.log
+.DS_Store
+.vscode/
